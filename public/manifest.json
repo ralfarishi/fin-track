@@ -1,0 +1,38 @@
+{
+	"id": "/",
+	"name": "FinTrack - Property Financials",
+	"short_name": "FinTrack",
+	"description": "Manage financial reports for multiple properties.",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#fcfaf8",
+	"theme_color": "#d97706",
+	"orientation": "any",
+	"icons": [
+		{
+			"src": "/icons/icon192_rounded.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icons/icon192_maskable.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "maskable"
+		},
+		{
+			"src": "/icons/icon512_rounded.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icons/icon512_maskable.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
+}
