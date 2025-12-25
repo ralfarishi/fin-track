@@ -1,5 +1,5 @@
 import { getSharedReport } from "@/lib/actions/share";
-import { SharedReportTable } from "@/components/shared-report-table";
+import { SharedReportTable } from "@/components/report/shared-report-table";
 import { ChartLineUpIcon, LinkBreakIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Metadata } from "next";
 

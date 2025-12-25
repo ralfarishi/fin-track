@@ -2,20 +2,15 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldError, FieldContent } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { ArrowCircleDownIcon, ArrowCircleUpIcon, CircleNotchIcon } from "@phosphor-icons/react";
+import PropertyCombobox from "@/components/property/PropertyCombobox";
 import { cn } from "@/lib/utils";
-import { useTransition, useEffect } from "react";
+import { useTransition } from "react";
 import { createTransaction } from "@/lib/actions/transactions";
 import { toast } from "sonner";
 import type { Property } from "@/lib/schema";
@@ -33,10 +28,17 @@ type TransactionValues = z.infer<typeof transactionSchema>;
 
 interface TransactionFormProps {
 	properties: Property[];
+	selectedPropertyId: string;
+	onPropertyChange: (property: Property) => void;
 	onSuccess?: () => void | Promise<void>;
 }
 
-export function TransactionForm({ properties, onSuccess }: TransactionFormProps) {
+export function TransactionForm({
+	properties,
+	selectedPropertyId: externalPropertyId,
+	onPropertyChange,
+	onSuccess,
+}: TransactionFormProps) {
 	const [isPending, startTransition] = useTransition();
 
 	const {
@@ -50,7 +52,7 @@ export function TransactionForm({ properties, onSuccess }: TransactionFormProps)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		resolver: zodResolver(transactionSchema) as any,
 		defaultValues: {
-			propertyId: properties.length > 0 ? properties[0].id : "",
+			propertyId: externalPropertyId || (properties.length > 0 ? properties[0].id : ""),
 			date: "",
 			description: "",
 			amount: 0,
@@ -58,18 +60,15 @@ export function TransactionForm({ properties, onSuccess }: TransactionFormProps)
 		},
 	});
 
-	// Set today's date on client only to avoid hydration mismatch
+	// Sync local form state with external property selection
 	useEffect(() => {
-		const today = new Date().toISOString().split("T")[0];
-		setValue("date", today);
-	}, [setValue]);
+		if (externalPropertyId) {
+			setValue("propertyId", externalPropertyId);
+		}
+	}, [externalPropertyId, setValue]);
 
 	const selectedType = watch("type");
 	const selectedPropertyId = watch("propertyId");
-
-	// Get selected property name for display
-	const selectedPropertyName =
-		properties.find((p) => p.id === selectedPropertyId)?.name || "Select property";
 
 	function onSubmit(values: TransactionValues) {
 		const formData = new FormData();
@@ -84,7 +83,6 @@ export function TransactionForm({ properties, onSuccess }: TransactionFormProps)
 			if (result.error) {
 				toast.error(result.error);
 			} else {
-				toast.success("Transaction saved successfully");
 				reset({
 					propertyId: values.propertyId,
 					date: new Date().toISOString().split("T")[0],
@@ -92,6 +90,7 @@ export function TransactionForm({ properties, onSuccess }: TransactionFormProps)
 					amount: 0,
 					type: "expense",
 				});
+				toast.success("Transaction saved successfully");
 				onSuccess?.();
 			}
 		});
@@ -106,21 +105,15 @@ export function TransactionForm({ properties, onSuccess }: TransactionFormProps)
 				<Field>
 					<FieldLabel>Property</FieldLabel>
 					<FieldContent>
-						<Select
-							value={selectedPropertyId ?? ""}
-							onValueChange={(val) => val && setValue("propertyId", val)}
-						>
-							<SelectTrigger className="rounded-xl h-12! w-full px-4 text-base">
-								<SelectValue>{selectedPropertyName}</SelectValue>
-							</SelectTrigger>
-							<SelectContent className="rounded-xl">
-								{properties.map((p) => (
-									<SelectItem key={p.id} value={p.id}>
-										{p.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						<PropertyCombobox
+							properties={properties}
+							selectedPropertyId={selectedPropertyId ?? ""}
+							onSelect={(p) => {
+								setValue("propertyId", p.id);
+								onPropertyChange(p);
+							}}
+							className="h-12! w-full px-4 text-base"
+						/>
 					</FieldContent>
 					{errors.propertyId && <FieldError errors={[{ message: errors.propertyId.message }]} />}
 				</Field>

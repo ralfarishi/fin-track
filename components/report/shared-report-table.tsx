@@ -158,10 +158,10 @@ export function SharedReportTable({
 						<TableRow className="hover:bg-transparent border-b-2">
 							<TableHead className="w-[120px] font-bold">Date</TableHead>
 							<TableHead className="font-bold">Description</TableHead>
-							<TableHead className="text-right font-bold text-green-600 dark:text-green-400">
+							<TableHead className="text-center font-bold text-emerald-600 dark:text-emerald-400">
 								Debit (In)
 							</TableHead>
-							<TableHead className="text-right font-bold text-red-600 dark:text-red-400">
+							<TableHead className="text-center font-bold text-rose-600 dark:text-rose-400">
 								Credit (Out)
 							</TableHead>
 							<TableHead className="text-right font-bold">Balance</TableHead>
@@ -177,10 +177,10 @@ export function SharedReportTable({
 									})}
 								</TableCell>
 								<TableCell>{row.description}</TableCell>
-								<TableCell className="text-right text-green-600 dark:text-green-400">
+								<TableCell className="text-center text-emerald-600 dark:text-emerald-400">
 									{row.income > 0 ? row.income.toLocaleString() : "-"}
 								</TableCell>
-								<TableCell className="text-right text-red-600 dark:text-red-400">
+								<TableCell className="text-center text-rose-600 dark:text-rose-400">
 									{row.expense > 0 ? row.expense.toLocaleString() : "-"}
 								</TableCell>
 								<TableCell className="text-right font-semibold">

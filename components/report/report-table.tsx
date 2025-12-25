@@ -1,14 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+
 import { Button } from "@/components/ui/button";
 import {
 	DownloadSimpleIcon,
@@ -23,14 +16,9 @@ import { exportToPng } from "@/lib/export-to-png";
 import { generateShareToken, revokeShareToken, getShareStatus } from "@/lib/actions/share";
 import { toast } from "sonner";
 import { Input } from "@base-ui/react";
+import ReportTableContent from "./report-table-content";
 
-interface Transaction {
-	id: string;
-	date: string;
-	description: string;
-	amount: number | string;
-	type: "income" | "expense";
-}
+import { Transaction } from "@/lib/schema";
 
 interface ReportTableProps {
 	transactions: Transaction[];
@@ -38,15 +26,9 @@ interface ReportTableProps {
 	propertyId: string;
 }
 
-// Format month from yyyy-mm to "Month YYYY"
-function formatMonthYear(dateString: string): string {
-	const [year, month] = dateString.split("-");
-	const date = new Date(parseInt(year), parseInt(month) - 1);
-	return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-}
-
 export function ReportTable({ transactions, propertyName, propertyId }: ReportTableProps) {
 	const tableRef = useRef<HTMLDivElement>(null);
+	const captureRef = useRef<HTMLDivElement>(null);
 	const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
 	const [isDownloading, setIsDownloading] = useState(false);
 
@@ -96,18 +78,18 @@ export function ReportTable({ transactions, propertyName, propertyId }: ReportTa
 	}, [filteredTransactions]);
 
 	const downloadImage = async () => {
-		if (tableRef.current) {
+		if (captureRef.current) {
 			setIsDownloading(true);
+			// Small delay to ensure any potential layout shifts are settled
 			await new Promise((resolve) => setTimeout(resolve, 150));
 
 			try {
-				// Format filename as propertyName_month-YYYY
 				const [year, month] = filterMonth.split("-");
 				const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString(
 					"en-US",
 					{ month: "long" }
 				);
-				await exportToPng(tableRef.current, `${propertyName}_${monthName}-${year}.png`);
+				await exportToPng(captureRef.current, `${propertyName}_${monthName}-${year}.png`);
 			} finally {
 				setIsDownloading(false);
 			}
@@ -158,6 +140,22 @@ export function ReportTable({ transactions, propertyName, propertyId }: ReportTa
 
 	return (
 		<div className="space-y-4">
+			{/* Hidden capture target - rendered off-screen but readable on all devices */}
+			<div className="fixed -left-[9999px] -top-[9999px] pointer-events-none">
+				<div
+					ref={captureRef}
+					className="bg-card rounded-none p-8 w-[800px]!"
+					style={{ backgroundColor: "white" }}
+				>
+					<ReportTableContent
+						data={reportData}
+						propertyName={propertyName}
+						filterMonth={filterMonth}
+						isExporting={true}
+					/>
+				</div>
+			</div>
+
 			{/* Controls Bar */}
 			<div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-card p-4 rounded-xl border shadow-sm my-2">
 				<div className="flex items-center gap-2">
@@ -226,76 +224,14 @@ export function ReportTable({ transactions, propertyName, propertyId }: ReportTa
 				</div>
 			</div>
 
-			{/* Report Table */}
-			<div
-				ref={tableRef}
-				className={`bg-card rounded-xl border shadow-sm p-6 ${
-					isDownloading ? "overflow-visible" : "overflow-hidden"
-				}`}
-			>
-				<div className="mb-6 text-center">
-					<h2 className="text-2xl font-bold text-primary">{propertyName}</h2>
-					<p className="text-muted-foreground font-medium">
-						Financial Report - {formatMonthYear(filterMonth)}
-					</p>
-				</div>
-
-				<Table>
-					<TableHeader>
-						<TableRow className="hover:bg-transparent border-b-2">
-							<TableHead className="w-[120px] font-bold">Date</TableHead>
-							<TableHead className="font-bold">Description</TableHead>
-							<TableHead className="text-right font-bold text-green-600 dark:text-green-400">
-								Debit (In)
-							</TableHead>
-							<TableHead className="text-right font-bold text-red-600 dark:text-red-400">
-								Credit (Out)
-							</TableHead>
-							<TableHead className="text-right font-bold">Balance</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{reportData.map((row) => (
-							<TableRow key={row.id} className="hover:bg-muted/30">
-								<TableCell className="font-medium">
-									{new Date(row.date).toLocaleDateString("en-US", {
-										day: "2-digit",
-										month: "short",
-									})}
-								</TableCell>
-								<TableCell>{row.description}</TableCell>
-								<TableCell className="text-right text-green-600 dark:text-green-400">
-									{row.income > 0 ? row.income.toLocaleString() : "-"}
-								</TableCell>
-								<TableCell className="text-right text-red-600 dark:text-red-400">
-									{row.expense > 0 ? row.expense.toLocaleString() : "-"}
-								</TableCell>
-								<TableCell className="text-right font-semibold">
-									{row.balance.toLocaleString()}
-								</TableCell>
-							</TableRow>
-						))}
-						{reportData.length === 0 && (
-							<TableRow>
-								<TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-									No transactions found for this month.
-								</TableCell>
-							</TableRow>
-						)}
-					</TableBody>
-				</Table>
-
-				<div className="mt-6 flex justify-end">
-					<div className="bg-primary/10 px-6 py-3 rounded-xl border border-primary/20 whitespace-nowrap">
-						<span className="text-sm font-medium text-muted-foreground mr-4">Total Balance:</span>
-						<span className="text-xl font-bold text-primary">
-							Rp.{" "}
-							{reportData.length > 0
-								? reportData[reportData.length - 1].balance.toLocaleString()
-								: "0"}
-						</span>
-					</div>
-				</div>
+			{/* Visible Report Table */}
+			<div ref={tableRef} className="bg-card rounded-xl border shadow-sm p-6 overflow-hidden">
+				<ReportTableContent
+					data={reportData}
+					propertyName={propertyName}
+					filterMonth={filterMonth}
+					isExporting={false}
+				/>
 			</div>
 		</div>
 	);
